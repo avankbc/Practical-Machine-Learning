@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Practical-machine-learning : coursera">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Practical-machine-learning</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/avankbc/Practical-machine-learning">View on GitHub</a>
+
+          <h1 id="project_title">Practical-machine-learning</h1>
+          <h2 id="project_tagline">coursera</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/avankbc/Practical-machine-learning/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/avankbc/Practical-machine-learning/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <p></p>
+
+<div>
+<div id="header">
+<h1>
+<a id="predicting-human-activity" class="anchor" href="#predicting-human-activity" aria-hidden="true"><span class="octicon octicon-link"></span></a>Predicting Human Activity</h1>
+<h4>
+<a id="avan-koh" class="anchor" href="#avan-koh" aria-hidden="true"><span class="octicon octicon-link"></span></a><em>Avan Koh</em>
+</h4>
+<h4>
+<a id="sunday-jan-25-2015" class="anchor" href="#sunday-jan-25-2015" aria-hidden="true"><span class="octicon octicon-link"></span></a><em>Sunday, Jan 25, 2015</em>
+</h4>
+</div>
+
+<p><br></p>
+
+<div id="executive-summary">
+<h2>
+<a id="executive-summary" class="anchor" href="#executive-summary" aria-hidden="true"><span class="octicon octicon-link"></span></a>Executive Summary</h2>
+<p>This detailed analysis has been performed to fulfill the requirements of the course project for the course <a href="https://www.coursera.org/course/predmachlearn" title="Regression Models">Practical Machine Learning</a> offered by the <a href="https://www.coursera.org/jhu" title="Johns Hopkins University">Johns Hopkins University</a> on <a href="https://www.coursera.org/" title="Coursera">Coursera</a>. Using devices such as Jawbone Up, Nike FuelBand, and Fitbit, it is now possible to collect a large amount of data about personal activity relatively inexpensively. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, our goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways.</p>
+<p>Six young health participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: exactly according to the specification (Class A), throwing the elbows to the front (Class B), lifting the dumbbell only halfway (Class C), lowering the dumbbell only halfway (Class D) and throwing the hips to the front (Class E). Class A corresponds to the specified execution of the exercise, while the other 4 classes correspond to common mistakes.</p>
+<p>Read more about the data set details in the <a href="http://groupware.les.inf.puc-rio.br/har#weight_lifting_exercises#ixzz35JVTyesz" title="Groupware@LES"></a><a href="mailto:Groupware@LES">Groupware@LES</a> website.</p>
+<p>The main objectives of this project are as follows</p>
+<ul>
+<li>Predict the manner in which they did the exercise depicted by the <code>classe</code> variable.</li>
+<li>Build a prediction model using different features and cross-validation technique.</li>
+<li>Calculate the out of sample error.</li>
+<li>Use the prediction model to predict <code>20</code> different test cases provided. <br>
+</li>
+</ul>
+</div>
+
+<div id="loading-the-data">
+<h4>
+<a id="loading-the-data" class="anchor" href="#loading-the-data" aria-hidden="true"><span class="octicon octicon-link"></span></a>Loading the data</h4>
+<p>Next, we read the file using appropriate functions and load in the data using the following commands. We just check if the data is loaded correctly by viewing a few rows and columns of the data frame.</p>
+<pre><code>training &lt;- read.csv("pml-training.csv",na.strings=c("NA",""))
+testing &lt;-read.csv("pml-testing.csv",na.strings=c("NA",""))
+dim(training)</code></pre>
+<pre><code>## [1] 19622   160</code></pre>
+<pre><code>dim(testing)</code></pre>
+<pre><code>## [1]  20 160</code></pre>
+<pre><code>training[1:5,c('user_name','classe','num_window','roll_belt','pitch_belt')]</code></pre>
+<pre><code>##   user_name classe num_window roll_belt pitch_belt
+## 1  carlitos      A         11      1.41       8.07
+## 2  carlitos      A         11      1.41       8.07
+## 3  carlitos      A         11      1.42       8.07
+## 4  carlitos      A         12      1.48       8.05
+## 5  carlitos      A         12      1.48       8.07</code></pre>
+<p><br></p>
+</div>
+
+<div id="processing-the-data">
+<h4>
+<a id="processing-the-data" class="anchor" href="#processing-the-data" aria-hidden="true"><span class="octicon octicon-link"></span></a>Processing the data</h4>
+<p>First, we check how many columns have <code>NA</code> values in the training and testing data and what is the quantity of <code>NA</code> values present.</p>
+<pre><code>sum(is.na(training))  # Total NA values</code></pre>
+<pre><code>[1] 1921600</code></pre>
+<pre><code>t1 &lt;- table(colSums(is.na(training)))
+t2 &lt;- table(colSums(is.na(testing)))
+pandoc.table(t1, style = "grid", justify = 'left', caption = 'Training data column NA frequencies')</code></pre>
+<pre><code>
+
++----+-----+
+| 60 | 100 |
++----+-----+
+
+Table: Training data column NA frequencies</code></pre>
+<pre><code>pandoc.table(t2, style = "grid", justify = 'left', caption = 'Testing data column NA frequencies')</code></pre>
+<pre><code>
+
++----+-----+
+| 60 | 100 |
++----+-----+
+
+Table: Testing data column NA frequencies</code></pre>
+<p>Looking at the above values it is clear that <code>60</code> variables have <code>0</code> NA values while the rest have <code>NA</code> values for almost all the rows of the dataset, so we are going to ignore them using the following code segment.</p>
+<pre><code># for training dataset
+columnNACounts &lt;- colSums(is.na(training))        # getting NA counts for all columns
+badColumns &lt;- columnNACounts &gt;= 19000             # ignoring columns with majority NA values
+cleanTrainingdata &lt;- training[!badColumns]        # getting clean data
+sum(is.na(cleanTrainingdata))                     # checking for NA values</code></pre>
+<pre><code>## [1] 0</code></pre>
+<pre><code>cleanTrainingdata &lt;- cleanTrainingdata[, c(7:60)] # removing unnecessary columns
+
+# for testing dataset
+columnNACounts &lt;- colSums(is.na(testing))         # getting NA counts for all columns
+badColumns &lt;- columnNACounts &gt;= 20                # ignoring columns with majority NA values
+cleanTestingdata &lt;- testing[!badColumns]        # getting clean data
+sum(is.na(cleanTestingdata))                     # checking for NA values</code></pre>
+<pre><code>## [1] 0</code></pre>
+<pre><code>cleanTestingdata &lt;- cleanTestingdata[, c(7:60)] # removing unnecessary columns</code></pre>
+<p>Now since we don’t have any NA values we are ready to do some exploratory analysis and build our prediction model. <br></p>
+</div>
+
+<p></p>
+</div>
+
+<div id="exploratory-data-analysis">
+<h2>
+<a id="exploratory-data-analysis" class="anchor" href="#exploratory-data-analysis" aria-hidden="true"><span class="octicon octicon-link"></span></a>Exploratory Data Analysis</h2>
+<p>We look at some summary statistics and frequency plot for the <code>classe</code> variable.</p>
+<pre><code>s &lt;- summary(cleanTrainingdata$classe)
+pandoc.table(s, style = "grid", justify = 'left', caption = '`classe` frequencies')</code></pre>
+<pre><code>
+
++------+------+------+------+------+
+| 5580 | 3797 | 3422 | 3216 | 3607 |
++------+------+------+------+------+
+
+Table: `classe` frequencies</code></pre>
+<pre><code>plot(cleanTrainingdata$classe,col=rainbow(5),main = "`classe` frequency plot")</code></pre>
+<p><img title alt width="672"> <br></p>
+</div>
+
+<div id="model-building">
+<h2>
+<a id="model-building" class="anchor" href="#model-building" aria-hidden="true"><span class="octicon octicon-link"></span></a>Model building</h2>
+<p>In this section, we will build a machine learning model for predicting the <code>classe</code> value based on the other features of the dataset. <br></p>
+<div id="data-partitioning">
+<h4>
+<a id="data-partitioning" class="anchor" href="#data-partitioning" aria-hidden="true"><span class="octicon octicon-link"></span></a>Data partitioning</h4>
+<p>First we partition the <code>cleanTrainingdata</code> dataset into training and testing data sets for building our model using the following code segment.</p>
+<pre><code>partition &lt;- createDataPartition(y = cleanTrainingdata$classe, p = 0.6, list = FALSE)
+trainingdata &lt;- cleanTrainingdata[partition, ]
+testdata &lt;- cleanTrainingdata[-partition, ]</code></pre>
+<p><br></p>
+</div>
+
+<div id="model-building-1">
+<h4>
+<a id="model-building-1" class="anchor" href="#model-building-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Model building</h4>
+<p>Now, using the features in the <code>trainingdata</code> dataset, we will build our model using the <code>Random Forest</code> machine learning technique.</p>
+<pre><code>#trainInds &lt;- sample(nrow(cleanTrainingdata), 3000)
+#trainingdata&lt;-cleanTrainingdata[trainInds,]
+model &lt;- train(classe ~ ., data = trainingdata, method = "rf", prox = TRUE, trControl = trainControl(method = "cv", number = 4, allowParallel = TRUE))
+model</code></pre>
+<pre><code>## Random Forest 
+## 
+## 11776 samples
+##    53 predictor
+##     5 classes: 'A', 'B', 'C', 'D', 'E' 
+## 
+## No pre-processing
+## Resampling: Cross-Validated (4 fold) 
+## 
+## Summary of sample sizes: 8833, 8831, 8832, 8832 
+## 
+## Resampling results across tuning parameters:
+## 
+##   mtry  Accuracy   Kappa      Accuracy SD  Kappa SD   
+##    2    0.9915924  0.9893629  0.004248675  0.005377877
+##   27    0.9965182  0.9955954  0.001626636  0.002058587
+##   53    0.9943104  0.9928026  0.001221020  0.001545453
+## 
+## Accuracy was used to select the optimal model using  the largest value.
+## The final value used for the model was mtry = 27.</code></pre>
+<p>We build the model using <code>4-fold</code> cross validation. <br></p>
+</div>
+
+<div id="in-sample-accuracy">
+<h4>
+<a id="in-sample-accuracy" class="anchor" href="#in-sample-accuracy" aria-hidden="true"><span class="octicon octicon-link"></span></a>In sample accuracy</h4>
+<p>Here, we calculate the <code>in sample</code> accuracy which is the prediction accuracy of our model on the training data set.</p>
+<pre><code>training_pred &lt;- predict(model, trainingdata)
+confusionMatrix(training_pred, trainingdata$classe)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 3348    0    0    0    0
+##          B    0 2279    0    0    0
+##          C    0    0 2054    0    0
+##          D    0    0    0 1930    0
+##          E    0    0    0    0 2165
+## 
+## Overall Statistics
+##                                      
+##                Accuracy : 1          
+##                  95% CI : (0.9997, 1)
+##     No Information Rate : 0.2843     
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16  
+##                                      
+##                   Kappa : 1          
+##  Mcnemar's Test P-Value : NA         
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity            1.0000   1.0000   1.0000   1.0000   1.0000
+## Specificity            1.0000   1.0000   1.0000   1.0000   1.0000
+## Pos Pred Value         1.0000   1.0000   1.0000   1.0000   1.0000
+## Neg Pred Value         1.0000   1.0000   1.0000   1.0000   1.0000
+## Prevalence             0.2843   0.1935   0.1744   0.1639   0.1838
+## Detection Rate         0.2843   0.1935   0.1744   0.1639   0.1838
+## Detection Prevalence   0.2843   0.1935   0.1744   0.1639   0.1838
+## Balanced Accuracy      1.0000   1.0000   1.0000   1.0000   1.0000</code></pre>
+<p>Thus from the above statistics we see that the <code>in sample</code> accuracy value is <code>1</code> which is <code>100%</code>. <br></p>
+</div>
+
+<div id="out-of-sample-accuracy">
+<h4>
+<a id="out-of-sample-accuracy" class="anchor" href="#out-of-sample-accuracy" aria-hidden="true"><span class="octicon octicon-link"></span></a>Out of sample accuracy</h4>
+<p>Here, we calculate the <code>out of sample</code> accuracy which is the prediction accuracy of our model on the testing data set.</p>
+<pre><code>testing_pred &lt;- predict(model, testdata)
+confusionMatrix(testing_pred, testdata$classe)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 2231    2    0    0    0
+##          B    0 1514    5    0    3
+##          C    0    2 1363    5    0
+##          D    0    0    0 1281    4
+##          E    1    0    0    0 1435
+## 
+## Overall Statistics
+##                                           
+##                Accuracy : 0.9972          
+##                  95% CI : (0.9958, 0.9982)
+##     No Information Rate : 0.2845          
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
+##                                           
+##                   Kappa : 0.9965          
+##  Mcnemar's Test P-Value : NA              
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity            0.9996   0.9974   0.9963   0.9961   0.9951
+## Specificity            0.9996   0.9987   0.9989   0.9994   0.9998
+## Pos Pred Value         0.9991   0.9947   0.9949   0.9969   0.9993
+## Neg Pred Value         0.9998   0.9994   0.9992   0.9992   0.9989
+## Prevalence             0.2845   0.1935   0.1744   0.1639   0.1838
+## Detection Rate         0.2843   0.1930   0.1737   0.1633   0.1829
+## Detection Prevalence   0.2846   0.1940   0.1746   0.1638   0.1830
+## Balanced Accuracy      0.9996   0.9981   0.9976   0.9978   0.9975</code></pre>
+<p>Thus from the above statistics we see that the <code>out of sample</code> accuracy value is <code>0.998</code> which is <code>99.8%</code>.</p>
+<p><br></p>
+</div>
+
+<p></p>
+</div>
+
+<div id="prediction-assignment">
+<h2>
+<a id="prediction-assignment" class="anchor" href="#prediction-assignment" aria-hidden="true"><span class="octicon octicon-link"></span></a>Prediction Assignment</h2>
+<p>Here, we apply the machine learning algorithm we built above, to each of the 20 test cases in the testing data set provided.</p>
+<pre><code>answers &lt;- predict(model, cleanTestingdata)
+answers &lt;- as.character(answers)
+answers</code></pre>
+<pre><code>##  [1] "B" "A" "B" "A" "A" "E" "D" "B" "A" "A" "B" "C" "B" "A" "E" "E" "A" "B" "B" "B"</code></pre>
+<p>Finally, we write the answers to files as specified by the course instructor using the following code segment.</p>
+<pre><code>pml_write_files = function(x) {
+    n = length(x)
+    for (i in 1:n) {
+        filename = paste0("problem_id_", i, ".txt")
+        write.table(x[i], file = filename, quote = FALSE, row.names = FALSE, 
+            col.names = FALSE)
+    }
+}
+
+pml_write_files(answers)</code></pre>
+<p>On submission, we would see that all the predicted values are correct and a score of <code>20\20</code> is obtained. <br></p>
+</div>
+
+<div id="conclusion">
+<h2>
+<a id="conclusion" class="anchor" href="#conclusion" aria-hidden="true"><span class="octicon octicon-link"></span></a>Conclusion</h2>
+<p>We choose <code>Random Forest</code> as our machine learning algorithm for building our model because,</p>
+<ul>
+<li>Builds a highly accurate classifier.</li>
+<li>Can handle thousands of variables.</li>
+<li>Balances bias and variance trade-offs by settling for a balanced model.</li>
+<li>Using <code>k-fold</code> cross validation builds a robust model.</li>
+</ul>
+<p>We also obtained a really good accuracy based on the statistics we obtained above.</p>
+</div>
+
+<p></p>
+
+
+
+
+
+
+
+<p>
+</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Practical-machine-learning maintained by <a href="https://github.com/avankbc">avankbc</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
